@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>ترتيب الدوري</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; background: #f9f9fb; padding: 20px; }
+    h1, h2 { text-align: center; color: #2c3e50; }
+    .section-toggle { text-align: center; margin-bottom: 20px; }
+    .toggle-btn { background-color: #2980b9; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 10px; transition: all 0.3s ease-in-out; }
+    .toggle-btn:hover { background-color: #1f618d; transform: scale(1.05); }
+    .section { display: none; margin-bottom: 40px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.3s ease-in-out; opacity: 0; transform: translateY(-10px); }
+    .section.active { display: block; opacity: 1; transform: translateY(0); }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #3498db; color: white; }
+    select, button, input { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    .btn { background-color: #2ecc71; color: white; border: none; cursor: pointer; }
+    .btn:hover { background-color: #27ae60; }
+    .danger { background-color: #e74c3c; }
+    .danger:hover { background-color: #c0392b; }
+    .loading { text-align: center; color: #7f8c8d; font-style: italic; }
+    .error { color: #e74c3c; background-color: #fdf2f2; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    .success { color: #27ae60; background-color: #f2fdf2; padding: 10px; border-radius: 5px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>دوري الأبطال المحلي</h1>
+  
+  <div class="section-toggle">
+    <button class="toggle-btn" onclick="toggleSection('standingsSection')">📊 جدول الترتيب</button>
+    <button class="toggle-btn" onclick="toggleSection('roundMatchesSection')">⚽ مباريات الجولة</button>
+    <button class="toggle-btn" onclick="toggleSection('playerMatchesSection')">👤 مباريات لاعب</button>
+    <button class="toggle-btn" onclick="toggleSection('loginSection')">🔒 دخول المشرف</button>
+  </div>
+
+  <div id="standingsSection" class="section">
+    <h2>جدول الترتيب</h2>
+    <div id="standingsLoading" class="loading">جاري تحميل البيانات...</div>
+    <table id="standings" style="display: none;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>اللاعب</th>
+          <th>لعب</th>
+          <th>فاز</th>
+          <th>تعادل</th>
+          <th>خسر</th>
+          <th>نقاط</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="roundMatchesSection" class="section">
+    <h2>مباريات الجولة</h2>
+    <label>اختر الجولة:
+      <select id="roundSelect"></select>
+    </label>
+    <table id="roundMatches">
+      <thead>
+        <tr>
+          <th>اللاعب 1</th>
+          <th>النتيجة</th>
+          <th>اللاعب 2</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="playerMatchesSection" class="section">
+    <h2>مباريات لاعب معين</h2>
+    <label>اختر اللاعب:
+      <select id="playerSelect"></select>
+    </label>
+    <table id="playerMatches">
+      <thead>
+        <tr>
+          <th>الجولة</th>
+          <th>الخصم</th>
+          <th>النتيجة</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section" id="loginSection">
+    <h2>🔒 دخول المشرف</h2>
+    <input type="password" id="adminPassword" placeholder="كلمة المرور">
+    <button class="btn" onclick="loginAdmin()">دخول</button>
+  </div>
+
+  <div class="section" id="adminSection">
+    <h2>لوحة تحكم المشرف</h2>
+    <div id="adminMessages"></div>
+    
+    <h3>➕ إضافة لاعب</h3>
+    <input id="newPlayerName" type="text" placeholder="اسم اللاعب">
+    <button class="btn" onclick="addPlayer()">إضافة</button>
+    
+    <h3>❌ حذف لاعب</h3>
+    <select id="deletePlayerSelect"></select>
+    <button class="btn danger" onclick="deletePlayer()">حذف</button>
+    
+    <h3>➕ إضافة مباراة (بدون نتيجة)</h3>
+    <input id="roundInput" type="number" placeholder="الجولة">
+    <input id="p1Input" type="text" placeholder="اللاعب 1">
+    <input id="p2Input" type="text" placeholder="اللاعب 2">
+    <button class="btn" onclick="addMatchOnly()">إضافة مباراة</button>
+    
+    <h3>📝 تسجيل نتيجة مباراة</h3>
+    <input id="resRoundInput" type="number" placeholder="الجولة">
+    <input id="resP1Input" type="text" placeholder="اللاعب 1">
+    <input id="resS1Input" type="number" placeholder="النتيجة 1">
+    <input id="resS2Input" type="number" placeholder="النتيجة 2">
+    <input id="resP2Input" type="text" placeholder="اللاعب 2">
+    <button class="btn" onclick="addMatchResult()">تسجيل النتيجة</button>
+    
+    <h3>⚙️ تعديل / حذف مباراة</h3>
+    <select id="editMatchSelect"></select><br>
+    <input id="editScore1" type="number" placeholder="نتيجة اللاعب 1">
+    <input id="editScore2" type="number" placeholder="نتيجة اللاعب 2">
+    <button class="btn" onclick="editSelectedMatch()">✏️ تعديل النتيجة</button>
+    <button class="btn danger" onclick="deleteSelectedMatch()">🗑️ حذف المباراة</button>
+  </div>
+
+  <script type="module">
+    // Firebase configuration
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, addDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0kjjxizHCG6MIAF-pb5plTPAgo4GV9xU",
+      authDomain: "uofk-f3ad4.firebaseapp.com",
+      projectId: "uofk-f3ad4",
+      storageBucket: "uofk-f3ad4.firebasestorage.app",
+      messagingSenderId: "610874445559",
+      appId: "1:610874445559:web:ae05cc8676e22b242ecdf2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let players = [];
+    let matches = [];
+
+    // Show message to user
+    function showMessage(message, type = 'success') {
+      const messagesDiv = document.getElementById('adminMessages');
+      if (messagesDiv) {
+        messagesDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        setTimeout(() => {
+          messagesDiv.innerHTML = '';
+        }, 3000);
+      }
+    }
+
+    // Load players from Firebase
+    async function loadPlayers() {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'players'));
+        players = [];
+        querySnapshot.forEach((doc) => {
+          players.push({ id: doc.id, name: doc.data().name });
+        });
+      } catch (error) {
+        console.error('Error loading players:', error);
+        showMessage('خطأ في تحميل اللاعبين', 'error');
+      }
+    }
+
+    // Load matches from Firebase
+    async function loadMatches() {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'matches'));
+        matches = [];
+        querySnapshot.forEach((doc) => {
+          matches.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (error) {
+        console.error('Error loading matches:', error);
+        showMessage('خطأ في تحميل المباريات', 'error');
+      }
+    }
+
+    // Add player to Firebase
+    async function addPlayer() {
+      const name = document.getElementById("newPlayerName").value.trim();
+      if (!name) {
+        showMessage('يرجى إدخال اسم اللاعب', 'error');
+        return;
+      }
+
+      // Check if player already exists
+      if (players.some(p => p.name === name)) {
+        showMessage('اللاعب موجود بالفعل', 'error');
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'players'), { name: name });
+        showMessage('تم إضافة اللاعب بنجاح');
+        document.getElementById("newPlayerName").value = "";
+        await init();
+      } catch (error) {
+        console.error('Error adding player:', error);
+        showMessage('خطأ في إضافة اللاعب', 'error');
+      }
+    }
+
+    // Delete player from Firebase
+    async function deletePlayer() {
+      const select = document.getElementById("deletePlayerSelect");
+      const selectedPlayerId = select.value;
+      
+      if (!selectedPlayerId) {
+        showMessage('يرجى اختيار لاعب للحذف', 'error');
+        return;
+      }
+
+      if (!confirm("هل أنت متأكد من حذف اللاعب وكل مبارياته؟")) {
+        return;
+      }
+
+      try {
+        const player = players.find(p => p.id === selectedPlayerId);
+        
+        // Delete player
+        await deleteDoc(doc(db, 'players', selectedPlayerId));
+        
+        // Delete all matches involving this player
+        const playerMatches = matches.filter(m => m.p1 === player.name || m.p2 === player.name);
+        for (const match of playerMatches) {
+          await deleteDoc(doc(db, 'matches', match.id));
+        }
+        
+        showMessage('تم حذف اللاعب ومبارياته بنجاح');
+        await init();
+      } catch (error) {
+        console.error('Error deleting player:', error);
+        showMessage('خطأ في حذف اللاعب', 'error');
+      }
+    }
+
+    // Add match to Firebase
+    async function addMatchOnly() {
+      const round = parseInt(document.getElementById("roundInput").value);
+      const p1 = document.getElementById("p1Input").value.trim();
+      const p2 = document.getElementById("p2Input").value.trim();
+      
+      if (!round || !p1 || !p2) {
+        showMessage('يرجى إدخال جميع البيانات', 'error');
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, 'matches'), {
+          round: round,
+          p1: p1,
+          p2: p2,
+          s1: null,
+          s2: null
+        });
+        
+        showMessage('تم إضافة المباراة بنجاح');
+        document.getElementById("roundInput").value = "";
+        document.getElementById("p1Input").value = "";
+        document.getElementById("p2Input").value = "";
+        await init();
+      } catch (error) {
+        console.error('Error adding match:', error);
+        showMessage('خطأ في إضافة المباراة', 'error');
+      }
+    }
+
+    // Add match result
+    async function addMatchResult() {
+      const round = parseInt(document.getElementById("resRoundInput").value);
+      const p1 = document.getElementById("resP1Input").value.trim();
+      const p2 = document.getElementById("resP2Input").value.trim();
+      const s1 = parseInt(document.getElementById("resS1Input").value);
+      const s2 = parseInt(document.getElementById("resS2Input").value);
+      
+      if (!round || !p1 || !p2 || isNaN(s1) || isNaN(s2)) {
+        showMessage('يرجى إدخال جميع البيانات بشكل صحيح', 'error');
+        return;
+      }
+
+      try {
+        const match = matches.find(m => m.round === round && m.p1 === p1 && m.p2 === p2);
+        
+        if (!match) {
+          showMessage('المباراة غير موجودة. تأكد من البيانات.', 'error');
+          return;
+        }
+
+        await updateDoc(doc(db, 'matches', match.id), {
+          s1: s1,
+          s2: s2
+        });
+        
+        showMessage('تم تسجيل النتيجة بنجاح');
+        ["resRoundInput", "resP1Input", "resP2Input", "resS1Input", "resS2Input"].forEach(id => {
+          document.getElementById(id).value = "";
+        });
+        await init();
+      } catch (error) {
+        console.error('Error updating match result:', error);
+        showMessage('خطأ في تسجيل النتيجة', 'error');
+      }
+    }
+
+    // Edit selected match
+    async function editSelectedMatch() {
+      const select = document.getElementById("editMatchSelect");
+      const matchId = select.value;
+      const s1 = parseInt(document.getElementById("editScore1").value);
+      const s2 = parseInt(document.getElementById("editScore2").value);
+      
+      if (!matchId || isNaN(s1) || isNaN(s2)) {
+        showMessage('يرجى اختيار مباراة وإدخال نتائج صحيحة', 'error');
+        return;
+      }
+
+      try {
+        await updateDoc(doc(db, 'matches', matchId), {
+          s1: s1,
+          s2: s2
+        });
+        
+        showMessage('تم تعديل النتيجة بنجاح');
+        document.getElementById("editScore1").value = "";
+        document.getElementById("editScore2").value = "";
+        await init();
+      } catch (error) {
+        console.error('Error editing match:', error);
+        showMessage('خطأ في تعديل المباراة', 'error');
+      }
+    }
+
+    // Delete selected match
+    async function deleteSelectedMatch() {
+      const select = document.getElementById("editMatchSelect");
+      const matchId = select.value;
+      
+      if (!matchId) {
+        showMessage('يرجى اختيار مباراة للحذف', 'error');
+        return;
+      }
+
+      if (!confirm("هل أنت متأكد أنك تريد حذف هذه المباراة؟")) {
+        return;
+      }
+
+      try {
+        await deleteDoc(doc(db, 'matches', matchId));
+        showMessage('تم حذف المباراة بنجاح');
+        await init();
+      } catch (error) {
+        console.error('Error deleting match:', error);
+        showMessage('خطأ في حذف المباراة', 'error');
+      }
+    }
+
+    function toggleSection(id) {
+      document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+      });
+      document.getElementById(id).classList.add('active');
+    }
+
+    function calculateStandings() {
+      const stats = {};
+      players.forEach(p => stats[p.name] = { played: 0, won: 0, draw: 0, lost: 0, pts: 0 });
+      
+      matches.forEach(m => {
+        if (!stats[m.p1] || !stats[m.p2] || m.s1 == null || m.s2 == null) return;
+        stats[m.p1].played++;
+        stats[m.p2].played++;
+        if (m.s1 > m.s2) {
+          stats[m.p1].won++; stats[m.p2].lost++; stats[m.p1].pts += 3;
+        } else if (m.s1 < m.s2) {
+          stats[m.p2].won++; stats[m.p1].lost++; stats[m.p2].pts += 3;
+        } else {
+          stats[m.p1].draw++; stats[m.p2].draw++;
+          stats[m.p1].pts += 1; stats[m.p2].pts += 1;
+        }
+      });
+      
+      const sorted = players.slice().sort((a, b) => stats[b.name].pts - stats[a.name].pts);
+      const tbody = document.querySelector("#standings tbody");
+      tbody.innerHTML = "";
+      
+      sorted.forEach((p, i) => {
+        const s = stats[p.name];
+        tbody.innerHTML += `<tr><td>${i+1}</td><td>${p.name}</td><td>${s.played}</td><td>${s.won}</td><td>${s.draw}</td><td>${s.lost}</td><td>${s.pts}</td></tr>`;
+      });
+      
+      // Hide loading and show table
+      document.getElementById('standingsLoading').style.display = 'none';
+      document.getElementById('standings').style.display = 'table';
+    }
+
+    function loadOptions() {
+      const roundSelect = document.getElementById("roundSelect");
+      const rounds = [...new Set(matches.map(m => m.round))];
+      roundSelect.innerHTML = "";
+      rounds.sort((a,b)=>a-b).forEach(r => {
+        roundSelect.innerHTML += `<option value="${r}">الجولة ${r}</option>`;
+      });
+
+      const playerSelect = document.getElementById("playerSelect");
+      const deleteSelect = document.getElementById("deletePlayerSelect");
+      playerSelect.innerHTML = deleteSelect.innerHTML = "";
+      players.forEach(p => {
+        playerSelect.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+        deleteSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+
+      const editMatchSelect = document.getElementById("editMatchSelect");
+      editMatchSelect.innerHTML = "";
+      matches.forEach((m) => {
+        const label = `الجولة ${m.round} - ${m.p1} ضد ${m.p2} ${m.s1 != null ? `(${m.s1}-${m.s2})` : ''}`;
+        editMatchSelect.innerHTML += `<option value="${m.id}">${label}</option>`;
+      });
+    }
+
+    function loadRoundMatches() {
+      const round = Number(document.getElementById("roundSelect").value);
+      const tbody = document.querySelector("#roundMatches tbody");
+      tbody.innerHTML = "";
+      matches.filter(m => m.round === round).forEach(m => {
+        const result = (m.s1 != null && m.s2 != null) ? `${m.s1} - ${m.s2}` : "-";
+        tbody.innerHTML += `<tr><td>${m.p1}</td><td>${result}</td><td>${m.p2}</td></tr>`;
+      });
+    }
+
+    function loadPlayerMatches() {
+      const name = document.getElementById("playerSelect").value;
+      const tbody = document.querySelector("#playerMatches tbody");
+      tbody.innerHTML = "";
+      matches.filter(m => m.p1 === name || m.p2 === name).forEach(m => {
+        const opponent = m.p1 === name ? m.p2 : m.p1;
+        const score = (m.s1 != null && m.s2 != null) ? (m.p1 === name ? `${m.s1} - ${m.s2}` : `${m.s2} - ${m.s1}`) : "-";
+        tbody.innerHTML += `<tr><td>الجولة ${m.round}</td><td>${opponent}</td><td>${score}</td></tr>`;
+      });
+    }
+
+    function loginAdmin() {
+      const password = document.getElementById("adminPassword").value;
+      if (password === "admin123") {
+        toggleSection('adminSection');
+      } else {
+        alert("كلمة المرور غير صحيحة");
+      }
+    }
+
+    async function init() {
+      await loadPlayers();
+      await loadMatches();
+      loadOptions();
+      calculateStandings();
+      loadRoundMatches();
+      loadPlayerMatches();
+      
+      document.getElementById("roundSelect").onchange = loadRoundMatches;
+      document.getElementById("playerSelect").onchange = loadPlayerMatches;
+    }
+
+    // Make functions available globally
+    window.toggleSection = toggleSection;
+    window.addPlayer = addPlayer;
+    window.deletePlayer = deletePlayer;
+    window.addMatchOnly = addMatchOnly;
+    window.addMatchResult = addMatchResult;
+    window.editSelectedMatch = editSelectedMatch;
+    window.deleteSelectedMatch = deleteSelectedMatch;
+    window.loginAdmin = loginAdmin;
+    window.loadRoundMatches = loadRoundMatches;
+    window.loadPlayerMatches = loadPlayerMatches;
+
+    // Initialize the app
+    window.onload = init;
+  </script>
+</body>
+</html>
