@@ -3,29 +3,241 @@
 <head>
   <meta charset="UTF-8">
   <title>ترتيب الدوري</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; background: #f9f9fb; padding: 20px; }
-    h1, h2 { text-align: center; color: #2c3e50; }
-    .section-toggle { text-align: center; margin-bottom: 20px; }
-    .toggle-btn { background-color: #2980b9; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 10px; transition: all 0.3s ease-in-out; }
-    .toggle-btn:hover { background-color: #1f618d; transform: scale(1.05); }
-    .section { display: none; margin-bottom: 40px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: all 0.3s ease-in-out; opacity: 0; transform: translateY(-10px); }
-    .section.active { display: block; opacity: 1; transform: translateY(0); }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    th { background-color: #3498db; color: white; }
-    select, button, input { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; }
-    .btn { background-color: #2ecc71; color: white; border: none; cursor: pointer; }
-    .btn:hover { background-color: #27ae60; }
-    .danger { background-color: #e74c3c; }
-    .danger:hover { background-color: #c0392b; }
-    .loading { text-align: center; color: #7f8c8d; font-style: italic; }
-    .error { color: #e74c3c; background-color: #fdf2f2; padding: 10px; border-radius: 5px; margin: 10px 0; }
-    .success { color: #27ae60; background-color: #f2fdf2; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      direction: rtl; 
+      background: #f9f9fb; 
+      padding: 10px; 
+      margin: 0;
+      font-size: 14px;
+    }
+    h1, h2 { 
+      text-align: center; 
+      color: #2c3e50; 
+      margin: 10px 0;
+    }
+    h1 { font-size: 1.5em; }
+    h2 { font-size: 1.2em; }
+    h3 { font-size: 1em; margin: 15px 0 10px 0; }
+    
+    .section-toggle { 
+      text-align: center; 
+      margin-bottom: 15px; 
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .toggle-btn { 
+      background-color: #2980b9; 
+      color: white; 
+      border: none; 
+      padding: 12px 16px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      transition: all 0.3s ease-in-out;
+      font-size: 12px;
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .toggle-btn:hover, .toggle-btn:active { 
+      background-color: #1f618d; 
+      transform: scale(1.02); 
+    }
+    
+    .section { 
+      display: none; 
+      margin-bottom: 20px; 
+      background: white; 
+      padding: 15px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+      transition: all 0.3s ease-in-out; 
+      opacity: 0; 
+      transform: translateY(-10px); 
+    }
+    .section.active { 
+      display: block; 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+    
+    /* جداول متجاوبة */
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 15px;
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      background: white; 
+      border-radius: 10px; 
+      overflow: hidden; 
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      min-width: 300px;
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 8px; 
+      text-align: center; 
+      font-size: 13px;
+    }
+    th { 
+      background-color: #3498db; 
+      color: white; 
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    td { 
+      white-space: nowrap; 
+    }
+    
+    /* النماذج */
+    .form-group {
+      margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .form-row > * {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    select, button, input { 
+      padding: 12px; 
+      margin: 3px; 
+      border-radius: 8px; 
+      border: 1px solid #ccc; 
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    select {
+      background-color: white;
+      cursor: pointer;
+    }
+    
+    input[type="text"], input[type="number"], input[type="password"] {
+      background-color: white;
+    }
+    
+    .btn { 
+      background-color: #2ecc71; 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: bold;
+      transition: all 0.3s ease;
+      min-height: 45px;
+    }
+    .btn:hover, .btn:active { 
+      background-color: #27ae60; 
+      transform: translateY(-1px);
+    }
+    
+    .danger { 
+      background-color: #e74c3c; 
+    }
+    .danger:hover, .danger:active { 
+      background-color: #c0392b; 
+    }
+    
+    .loading { 
+      text-align: center; 
+      color: #7f8c8d; 
+      font-style: italic; 
+      padding: 20px;
+    }
+    .error { 
+      color: #e74c3c; 
+      background-color: #fdf2f2; 
+      padding: 10px; 
+      border-radius: 5px; 
+      margin: 10px 0;
+      border: 1px solid #fadbd8;
+    }
+    .success { 
+      color: #27ae60; 
+      background-color: #f2fdf2; 
+      padding: 10px; 
+      border-radius: 5px; 
+      margin: 10px 0;
+      border: 1px solid #d5ecd5;
+    }
+    
+    /* تحسينات للهاتف */
+    @media (max-width: 768px) {
+      body { 
+        padding: 5px; 
+        font-size: 13px;
+      }
+      .section { 
+        padding: 10px; 
+        margin-bottom: 15px;
+      }
+      .toggle-btn { 
+        padding: 10px 12px; 
+        font-size: 11px;
+        min-width: 100px;
+      }
+      th, td { 
+        padding: 6px; 
+        font-size: 12px;
+      }
+      select, button, input { 
+        padding: 10px; 
+        font-size: 13px;
+      }
+      .form-row {
+        flex-direction: column;
+      }
+      .form-row > * {
+        min-width: 100%;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      h1 { font-size: 1.3em; }
+      h2 { font-size: 1.1em; }
+      .toggle-btn { 
+        padding: 8px 10px; 
+        font-size: 10px;
+        min-width: 80px;
+      }
+      th, td { 
+        padding: 4px; 
+        font-size: 11px;
+      }
+      select, button, input { 
+        padding: 8px; 
+        font-size: 12px;
+      }
+    }
+    
+    /* تحسين لمس الشاشة */
+    @media (hover: none) {
+      .toggle-btn:hover, .btn:hover, .danger:hover {
+        transform: none;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>UOFK CHAMIONS LEAGUE</h1>
+  <h1>UOFK CHAMPIONS LEAGUE </h1>
   
   <div class="section-toggle">
     <button class="toggle-btn" onclick="toggleSection('standingsSection')">📊 جدول الترتيب</button>
@@ -37,60 +249,70 @@
   <div id="standingsSection" class="section">
     <h2>جدول الترتيب</h2>
     <div id="standingsLoading" class="loading">جاري تحميل البيانات...</div>
-    <table id="standings" style="display: none;">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>اللاعب</th>
-          <th>لعب</th>
-          <th>فاز</th>
-          <th>تعادل</th>
-          <th>خسر</th>
-          <th>نقاط</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-container">
+      <table id="standings" style="display: none;">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>اللاعب</th>
+            <th>لعب</th>
+            <th>فاز</th>
+            <th>تعادل</th>
+            <th>خسر</th>
+            <th>نقاط</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <div id="roundMatchesSection" class="section">
     <h2>مباريات الجولة</h2>
-    <label>اختر الجولة:
+    <div class="form-group">
+      <label>اختر الجولة:</label>
       <select id="roundSelect"></select>
-    </label>
-    <table id="roundMatches">
-      <thead>
-        <tr>
-          <th>اللاعب 1</th>
-          <th>النتيجة</th>
-          <th>اللاعب 2</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    </div>
+    <div class="table-container">
+      <table id="roundMatches">
+        <thead>
+          <tr>
+            <th>اللاعب 1</th>
+            <th>النتيجة</th>
+            <th>اللاعب 2</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <div id="playerMatchesSection" class="section">
     <h2>مباريات لاعب معين</h2>
-    <label>اختر اللاعب:
+    <div class="form-group">
+      <label>اختر اللاعب:</label>
       <select id="playerSelect"></select>
-    </label>
-    <table id="playerMatches">
-      <thead>
-        <tr>
-          <th>الجولة</th>
-          <th>الخصم</th>
-          <th>النتيجة</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    </div>
+    <div class="table-container">
+      <table id="playerMatches">
+        <thead>
+          <tr>
+            <th>الجولة</th>
+            <th>الخصم</th>
+            <th>النتيجة</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="section" id="loginSection">
     <h2>🔒 دخول المشرف</h2>
-    <input type="password" id="adminPassword" placeholder="كلمة المرور">
-    <button class="btn" onclick="loginAdmin()">دخول</button>
+    <div class="form-group">
+      <input type="password" id="adminPassword" placeholder="كلمة المرور">
+      <button class="btn" onclick="loginAdmin()">دخول</button>
+    </div>
   </div>
 
   <div class="section" id="adminSection">
@@ -98,33 +320,61 @@
     <div id="adminMessages"></div>
     
     <h3>➕ إضافة لاعب</h3>
-    <input id="newPlayerName" type="text" placeholder="اسم اللاعب">
-    <button class="btn" onclick="addPlayer()">إضافة</button>
+    <div class="form-group">
+      <div class="form-row">
+        <input id="newPlayerName" type="text" placeholder="اسم اللاعب">
+        <button class="btn" onclick="addPlayer()">إضافة</button>
+      </div>
+    </div>
     
     <h3>❌ حذف لاعب</h3>
-    <select id="deletePlayerSelect"></select>
-    <button class="btn danger" onclick="deletePlayer()">حذف</button>
+    <div class="form-group">
+      <div class="form-row">
+        <select id="deletePlayerSelect"></select>
+        <button class="btn danger" onclick="deletePlayer()">حذف</button>
+      </div>
+    </div>
     
     <h3>➕ إضافة مباراة (بدون نتيجة)</h3>
-    <input id="roundInput" type="number" placeholder="الجولة">
-    <input id="p1Input" type="text" placeholder="اللاعب 1">
-    <input id="p2Input" type="text" placeholder="اللاعب 2">
-    <button class="btn" onclick="addMatchOnly()">إضافة مباراة</button>
+    <div class="form-group">
+      <div class="form-row">
+        <input id="roundInput" type="number" placeholder="الجولة">
+        <input id="p1Input" type="text" placeholder="اللاعب 1">
+      </div>
+      <div class="form-row">
+        <input id="p2Input" type="text" placeholder="اللاعب 2">
+        <button class="btn" onclick="addMatchOnly()">إضافة مباراة</button>
+      </div>
+    </div>
     
     <h3>📝 تسجيل نتيجة مباراة</h3>
-    <input id="resRoundInput" type="number" placeholder="الجولة">
-    <input id="resP1Input" type="text" placeholder="اللاعب 1">
-    <input id="resS1Input" type="number" placeholder="النتيجة 1">
-    <input id="resS2Input" type="number" placeholder="النتيجة 2">
-    <input id="resP2Input" type="text" placeholder="اللاعب 2">
-    <button class="btn" onclick="addMatchResult()">تسجيل النتيجة</button>
+    <div class="form-group">
+      <div class="form-row">
+        <input id="resRoundInput" type="number" placeholder="الجولة">
+        <input id="resP1Input" type="text" placeholder="اللاعب 1">
+      </div>
+      <div class="form-row">
+        <input id="resS1Input" type="number" placeholder="النتيجة 1">
+        <input id="resS2Input" type="number" placeholder="النتيجة 2">
+      </div>
+      <div class="form-row">
+        <input id="resP2Input" type="text" placeholder="اللاعب 2">
+        <button class="btn" onclick="addMatchResult()">تسجيل النتيجة</button>
+      </div>
+    </div>
     
     <h3>⚙️ تعديل / حذف مباراة</h3>
-    <select id="editMatchSelect"></select><br>
-    <input id="editScore1" type="number" placeholder="نتيجة اللاعب 1">
-    <input id="editScore2" type="number" placeholder="نتيجة اللاعب 2">
-    <button class="btn" onclick="editSelectedMatch()">✏️ تعديل النتيجة</button>
-    <button class="btn danger" onclick="deleteSelectedMatch()">🗑️ حذف المباراة</button>
+    <div class="form-group">
+      <select id="editMatchSelect"></select>
+      <div class="form-row">
+        <input id="editScore1" type="number" placeholder="نتيجة اللاعب 1">
+        <input id="editScore2" type="number" placeholder="نتيجة اللاعب 2">
+      </div>
+      <div class="form-row">
+        <button class="btn" onclick="editSelectedMatch()">✏️ تعديل النتيجة</button>
+        <button class="btn danger" onclick="deleteSelectedMatch()">🗑️ حذف المباراة</button>
+      </div>
+    </div>
   </div>
 
   <script type="module">
