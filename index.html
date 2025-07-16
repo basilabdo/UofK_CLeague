@@ -261,6 +261,87 @@
         transform: none;
       }
     }
+    .top-stats-section {
+  display: none;
+  margin-top: 30px;
+  background: #fefefe;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.top-stats-section h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+.top-stats-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 200px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.stat-card h4 {
+  margin-bottom: 10px;
+  color: #34495e;
+  font-size: 1.1em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.stat-card ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.stat-card li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.stat-card li .rank {
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: 50%;
+  color: white;
+  line-height: 24px;
+  flex-shrink: 0;
+}
+
+.gold {
+  background-color: #f1c40f;
+  color: #fff;
+}
+.silver {
+  background-color: #bdc3c7;
+  color: #fff;
+}
+.bronze {
+  background-color: #d35400;
+  color: #fff;
+}
   </style>
 </head>
 <body>
@@ -296,7 +377,19 @@
       </table>
     </div>
   </div>
-
+<div id="topStats" class="top-stats-section">
+  <h3>🏆 أبرز الإنجازات</h3>
+  <div class="top-stats-cards">
+    <div class="stat-card">
+      <h4>🔥 أقوى هجوم</h4>
+      <ol id="topAttackList"></ol>
+    </div>
+    <div class="stat-card">
+      <h4>🛡️ أقوى دفاع</h4>
+      <ol id="topDefenseList"></ol>
+    </div>
+  </div>
+</div>
   <div id="roundMatchesSection" class="section">
     <h2>مباريات الجولة</h2>
     <div class="form-group">
@@ -676,81 +769,113 @@
     }
 
     function calculateStandings() {
-      const stats = {};
-      players.forEach(p => stats[p.name] = { 
-        played: 0, 
-        won: 0, 
-        draw: 0, 
-        lost: 0, 
-        pts: 0,
-        goalsFor: 0,
-        goalsAgainst: 0
-      });
-      
-      matches.forEach(m => {
-        if (!stats[m.p1] || !stats[m.p2] || m.s1 == null || m.s2 == null) return;
-        
-        stats[m.p1].played++;
-        stats[m.p2].played++;
-        
-        stats[m.p1].goalsFor += m.s1;
-        stats[m.p1].goalsAgainst += m.s2;
-        
-        stats[m.p2].goalsFor += m.s2;
-        stats[m.p2].goalsAgainst += m.s1;
-        
-        if (m.s1 > m.s2) {
-          stats[m.p1].won++; 
-          stats[m.p2].lost++; 
-          stats[m.p1].pts += 3;
-        } else if (m.s1 < m.s2) {
-          stats[m.p2].won++; 
-          stats[m.p1].lost++; 
-          stats[m.p2].pts += 3;
-        } else {
-          stats[m.p1].draw++; 
-          stats[m.p2].draw++;
-          stats[m.p1].pts += 1; 
-          stats[m.p2].pts += 1;
-        }
-      });
-      
-      const sorted = players.slice().sort((a, b) => {
-        // Sort by points descending
-        if (stats[b.name].pts !== stats[a.name].pts) {
-          return stats[b.name].pts - stats[a.name].pts;
-        }
-        // If points are equal, sort by goal difference descending
-        const diffA = stats[a.name].goalsFor - stats[a.name].goalsAgainst;
-        const diffB = stats[b.name].goalsFor - stats[b.name].goalsAgainst;
-        return diffB - diffA;
-      });
-      
-      const tbody = document.querySelector("#standings tbody");
-      tbody.innerHTML = "";
-      
-      sorted.forEach((p, i) => {
-        const s = stats[p.name];
-        const goalDiff = s.goalsFor - s.goalsAgainst;
-        tbody.innerHTML += `
-          <tr>
-            <td>${i+1}</td>
-            <td>${p.name}</td>
-            <td>${s.played}</td>
-            <td>${s.won}</td>
-            <td>${s.draw}</td>
-            <td>${s.lost}</td>
-            <td>${s.goalsFor}</td>
-            <td>${s.goalsAgainst}</td>
-            <td>${goalDiff > 0 ? '+' : ''}${goalDiff}</td>
-            <td>${s.pts}</td>
-          </tr>`;
-      });
-      
-      // Hide loading and show table
-      document.getElementById('standingsLoading').style.display = 'none';
-      document.getElementById('standings').style.display = 'table';
+  const stats = {};
+  players.forEach(p => {
+    stats[p.name] = { 
+      played: 0, 
+      won: 0, 
+      draw: 0, 
+      lost: 0, 
+      pts: 0,
+      goalsFor: 0,
+      goalsAgainst: 0
+    };
+  });
+
+  matches.forEach(m => {
+    if (!stats[m.p1] || !stats[m.p2] || m.s1 == null || m.s2 == null) return;
+
+    stats[m.p1].played++;
+    stats[m.p2].played++;
+
+    stats[m.p1].goalsFor += m.s1;
+    stats[m.p1].goalsAgainst += m.s2;
+
+    stats[m.p2].goalsFor += m.s2;
+    stats[m.p2].goalsAgainst += m.s1;
+
+    if (m.s1 > m.s2) {
+      stats[m.p1].won++;
+      stats[m.p2].lost++;
+      stats[m.p1].pts += 3;
+    } else if (m.s1 < m.s2) {
+      stats[m.p2].won++;
+      stats[m.p1].lost++;
+      stats[m.p2].pts += 3;
+    } else {
+      stats[m.p1].draw++;
+      stats[m.p2].draw++;
+      stats[m.p1].pts += 1;
+      stats[m.p2].pts += 1;
     }
+  });
+
+  // حساب أقوى 3 هجوم
+  const topAttack = players
+    .map(p => ({ name: p.name, gf: stats[p.name].goalsFor }))
+    .sort((a, b) => b.gf - a.gf)
+    .slice(0, 3);
+
+  // حساب أقوى 3 دفاع
+  const topDefense = players
+    .map(p => ({ name: p.name, ga: stats[p.name].goalsAgainst }))
+    .sort((a, b) => a.ga - b.ga)
+    .slice(0, 3);
+
+  const medals = ["🥇", "🥈", "🥉"];
+  const medalClasses = ["gold", "silver", "bronze"];
+
+  const topAttackList = document.getElementById("topAttackList");
+  const topDefenseList = document.getElementById("topDefenseList");
+
+  topAttackList.innerHTML = topAttack.map((p, i) =>
+    `<li class="${medalClasses[i] || ''}">
+      <span class="rank ${medalClasses[i] || ''}">${i + 1}</span>
+      ${medals[i] || ''} <strong>${p.name}</strong> — ${p.gf} هدف${p.gf !== 1 ? 'ًا' : ''}
+    </li>`
+  ).join("");
+
+  topDefenseList.innerHTML = topDefense.map((p, i) =>
+    `<li class="${medalClasses[i] || ''}">
+      <span class="rank ${medalClasses[i] || ''}">${i + 1}</span>
+      ${medals[i] || ''} <strong>${p.name}</strong> — استقبل ${p.ga} هدف${p.ga !== 1 ? 'ًا' : ''}
+    </li>`
+  ).join("");
+
+  const sorted = players.slice().sort((a, b) => {
+    if (stats[b.name].pts !== stats[a.name].pts) {
+      return stats[b.name].pts - stats[a.name].pts;
+    }
+    const diffA = stats[a.name].goalsFor - stats[a.name].goalsAgainst;
+    const diffB = stats[b.name].goalsFor - stats[b.name].goalsAgainst;
+    return diffB - diffA;
+  });
+
+  const tbody = document.querySelector("#standings tbody");
+  tbody.innerHTML = "";
+
+  sorted.forEach((p, i) => {
+    const s = stats[p.name];
+    const goalDiff = s.goalsFor - s.goalsAgainst;
+    tbody.innerHTML += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${p.name}</td>
+        <td>${s.played}</td>
+        <td>${s.won}</td>
+        <td>${s.draw}</td>
+        <td>${s.lost}</td>
+        <td>${s.goalsFor}</td>
+        <td>${s.goalsAgainst}</td>
+        <td>${goalDiff > 0 ? '+' : ''}${goalDiff}</td>
+        <td>${s.pts}</td>
+      </tr>`;
+  });
+
+  document.getElementById('standingsLoading').style.display = 'none';
+  document.getElementById('topStats').style.display = 'block';
+  document.getElementById('standings').style.display = 'table';
+}
 
     function loadOptions() {
       const roundSelect = document.getElementById("roundSelect");
