@@ -342,6 +342,34 @@
   background-color: #d35400;
   color: #fff;
 }
+tr.gold-row {
+  background: #fff8dc;
+  font-weight: bold;
+  font-size: 15px;
+}
+tr.silver-row {
+  background: #f0f0f0;
+  font-weight: bold;
+}
+tr.bronze-row {
+  background: #fdf5e6;
+  font-weight: bold;
+}
+
+tr.gold-row td {
+  box-shadow: inset 0 0 5px #f1c40f;
+}
+tr.silver-row td {
+  box-shadow: inset 0 0 5px #bdc3c7;
+}
+tr.bronze-row td {
+  box-shadow: inset 0 0 5px #d35400;
+}
+
+td.name-cell span.medal {
+  margin-left: 5px;
+  font-size: 16px;
+}
   </style>
 </head>
 <body>
@@ -855,22 +883,26 @@
   tbody.innerHTML = "";
 
   sorted.forEach((p, i) => {
-    const s = stats[p.name];
-    const goalDiff = s.goalsFor - s.goalsAgainst;
-    tbody.innerHTML += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${p.name}</td>
-        <td>${s.played}</td>
-        <td>${s.won}</td>
-        <td>${s.draw}</td>
-        <td>${s.lost}</td>
-        <td>${s.goalsFor}</td>
-        <td>${s.goalsAgainst}</td>
-        <td>${goalDiff > 0 ? '+' : ''}${goalDiff}</td>
-        <td>${s.pts}</td>
-      </tr>`;
-  });
+  const s = stats[p.name];
+  const goalDiff = s.goalsFor - s.goalsAgainst;
+
+  const rankClass = i === 0 ? 'gold-row' : i === 1 ? 'silver-row' : i === 2 ? 'bronze-row' : '';
+  const medalIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+
+  tbody.innerHTML += `
+    <tr class="${rankClass}">
+      <td>${i + 1}</td>
+      <td class="name-cell"><strong>${p.name}</strong> <span class="medal">${medalIcon}</span></td>
+      <td>${s.played}</td>
+      <td>${s.won}</td>
+      <td>${s.draw}</td>
+      <td>${s.lost}</td>
+      <td>${s.goalsFor}</td>
+      <td>${s.goalsAgainst}</td>
+      <td>${goalDiff > 0 ? '+' : ''}${goalDiff}</td>
+      <td>${s.pts}</td>
+    </tr>`;
+});
 
   document.getElementById('standingsLoading').style.display = 'none';
   document.getElementById('topStats').style.display = 'block';
