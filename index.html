@@ -370,6 +370,16 @@ td.name-cell span.medal {
   margin-left: 5px;
   font-size: 16px;
 }
+tr.warning-row {
+  background-color: #ffe6e6; /* أحمر فاتح */
+  color: #c0392b; /* أحمر غامق */
+  font-weight: bold;
+  font-size: 14px;
+}
+
+tr.warning-row td {
+  box-shadow: inset 0 0 5px #e74c3c;
+}
   </style>
 </head>
 <body>
@@ -894,8 +904,12 @@ td.name-cell span.medal {
   const s = stats[p.name];
   const goalDiff = s.goalsFor - s.goalsAgainst;
 
-  const rankClass = i === 0 ? 'gold-row' : i === 1 ? 'silver-row' : i === 2 ? 'bronze-row' : '';
-  const medalIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+  let rankClass = '';
+if (i === 0) rankClass = 'gold-row';
+else if (i === 1) rankClass = 'silver-row';
+else if (i === 2) rankClass = 'bronze-row';
+else if (i >= sorted.length - 6) rankClass = 'warning-row'; // آخر 6 مراكز
+  const medalIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i >= sorted.length - 6 ? '⚠️' : '');
 
   tbody.innerHTML += `
     <tr class="${rankClass}">
