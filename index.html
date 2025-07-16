@@ -790,11 +790,19 @@ td.name-cell span.medal {
     }
 
     function toggleSection(id) {
-      document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-      });
-      document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.section').forEach(section => {
+    section.classList.remove('active');
+  });
+  document.getElementById(id).classList.add('active');
+
+  // إظهار أو إخفاء قسم الإنجازات بناءً على القسم المفتوح
+  const topStats = document.getElementById('topStats');
+  if (id === 'standingsSection') {
+    topStats.style.display = 'block';
+  } else {
+    topStats.style.display = 'none';
     }
+  }
 
     function calculateStandings() {
   const stats = {};
