@@ -982,11 +982,16 @@ const resP2Input = document.getElementById("resP2Input");
       const name = document.getElementById("playerSelect").value;
       const tbody = document.querySelector("#playerMatches tbody");
       tbody.innerHTML = "";
-      matches.filter(m => m.p1 === name || m.p2 === name).forEach(m => {
-        const opponent = m.p1 === name ? m.p2 : m.p1;
-        const score = (m.s1 != null && m.s2 != null) ? (m.p1 === name ? `${m.s1} - ${m.s2}` : `${m.s2} - ${m.s1}`) : "-";
-        tbody.innerHTML += `<tr><td>الجولة ${m.round}</td><td>${opponent}</td><td>${score}</td></tr>`;
-      });
+      matches
+  .filter(m => m.p1 === name || m.p2 === name)
+  .sort((a, b) => a.round - b.round) // ← هذا هو الترتيب حسب الجولة
+  .forEach(m => {
+    const opponent = m.p1 === name ? m.p2 : m.p1;
+    const score = (m.s1 != null && m.s2 != null) ?
+      (m.p1 === name ? `${m.s1} - ${m.s2}` : `${m.s2} - ${m.s1}`) :
+      "-";
+    tbody.innerHTML += `<tr><td>الجولة ${m.round}</td><td>${opponent}</td><td>${score}</td></tr>`;
+  });
     }
 
     function loginAdmin() {
