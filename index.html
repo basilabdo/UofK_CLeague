@@ -179,6 +179,33 @@
       border: 1px solid #d5ecd5;
     }
     
+    .player-selector {
+      position: relative;
+    }
+    
+    .player-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+    
+    .player-dropdown div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    
+    .player-dropdown div:hover {
+      background-color: #f5f5f5;
+    }
+    
     /* تحسينات للهاتف */
     @media (max-width: 768px) {
       body { 
@@ -237,7 +264,7 @@
   </style>
 </head>
 <body>
-  <h1>UOFK CHAMPIONS LEAGUE </h1>
+  <h1>دوري الأبطال المحلي</h1>
   
   <div class="section-toggle">
     <button class="toggle-btn" onclick="toggleSection('standingsSection')">📊 جدول الترتيب</button>
@@ -259,6 +286,9 @@
             <th>فاز</th>
             <th>تعادل</th>
             <th>خسر</th>
+            <th>له</th>
+            <th>عليه</th>
+            <th>+/-</th>
             <th>نقاط</th>
           </tr>
         </thead>
@@ -339,10 +369,16 @@
     <div class="form-group">
       <div class="form-row">
         <input id="roundInput" type="number" placeholder="الجولة">
-        <input id="p1Input" type="text" placeholder="اللاعب 1">
+        <div class="player-selector">
+          <select id="p1Input"></select>
+          <div id="p1Dropdown" class="player-dropdown"></div>
+        </div>
       </div>
       <div class="form-row">
-        <input id="p2Input" type="text" placeholder="اللاعب 2">
+        <div class="player-selector">
+          <select id="p2Input"></select>
+          <div id="p2Dropdown" class="player-dropdown"></div>
+        </div>
         <button class="btn" onclick="addMatchOnly()">إضافة مباراة</button>
       </div>
     </div>
@@ -351,14 +387,20 @@
     <div class="form-group">
       <div class="form-row">
         <input id="resRoundInput" type="number" placeholder="الجولة">
-        <input id="resP1Input" type="text" placeholder="اللاعب 1">
+        <div class="player-selector">
+          <select id="resP1Input"></select>
+          <div id="resP1Dropdown" class="player-dropdown"></div>
+        </div>
       </div>
       <div class="form-row">
         <input id="resS1Input" type="number" placeholder="النتيجة 1">
         <input id="resS2Input" type="number" placeholder="النتيجة 2">
       </div>
       <div class="form-row">
-        <input id="resP2Input" type="text" placeholder="اللاعب 2">
+        <div class="player-selector">
+          <select id="resP2Input"></select>
+          <div id="resP2Dropdown" class="player-dropdown"></div>
+        </div>
         <button class="btn" onclick="addMatchResult()">تسجيل النتيجة</button>
       </div>
     </div>
@@ -386,7 +428,7 @@
       apiKey: "AIzaSyB0kjjxizHCG6MIAF-pb5plTPAgo4GV9xU",
       authDomain: "uofk-f3ad4.firebaseapp.com",
       projectId: "uofk-f3ad4",
-      storageBucket: "uofk-f3ad4.firebasestorage.app",
+      storageBucket: "uofk-f3ad4.appspot.com",
       messagingSenderId: "610874445559",
       appId: "1:610874445559:web:ae05cc8676e22b242ecdf2"
     };
@@ -506,6 +548,11 @@
         return;
       }
 
+      if (p1 === p2) {
+        showMessage('لا يمكن أن يكون اللاعب 1 هو نفسه اللاعب 2', 'error');
+        return;
+      }
+
       try {
         await addDoc(collection(db, 'matches'), {
           round: round,
@@ -540,16 +587,22 @@
       }
 
       try {
-        const match = matches.find(m => m.round === round && m.p1 === p1 && m.p2 === p2);
+        // Search for match in both directions (p1 vs p2 and p2 vs p1)
+        let match = matches.find(m => m.round === round && (
+          (m.p1 === p1 && m.p2 === p2) || (m.p1 === p2 && m.p2 === p1)
+        ));
         
         if (!match) {
           showMessage('المباراة غير موجودة. تأكد من البيانات.', 'error');
           return;
         }
 
+        // Adjust scores if players are reversed
+        const isReversed = match.p1 === p2 && match.p2 === p1;
+        
         await updateDoc(doc(db, 'matches', match.id), {
-          s1: s1,
-          s2: s2
+          s1: isReversed ? s2 : s1,
+          s2: isReversed ? s1 : s2
         });
         
         showMessage('تم تسجيل النتيجة بنجاح');
@@ -624,29 +677,74 @@
 
     function calculateStandings() {
       const stats = {};
-      players.forEach(p => stats[p.name] = { played: 0, won: 0, draw: 0, lost: 0, pts: 0 });
+      players.forEach(p => stats[p.name] = { 
+        played: 0, 
+        won: 0, 
+        draw: 0, 
+        lost: 0, 
+        pts: 0,
+        goalsFor: 0,
+        goalsAgainst: 0
+      });
       
       matches.forEach(m => {
         if (!stats[m.p1] || !stats[m.p2] || m.s1 == null || m.s2 == null) return;
+        
         stats[m.p1].played++;
         stats[m.p2].played++;
+        
+        stats[m.p1].goalsFor += m.s1;
+        stats[m.p1].goalsAgainst += m.s2;
+        
+        stats[m.p2].goalsFor += m.s2;
+        stats[m.p2].goalsAgainst += m.s1;
+        
         if (m.s1 > m.s2) {
-          stats[m.p1].won++; stats[m.p2].lost++; stats[m.p1].pts += 3;
+          stats[m.p1].won++; 
+          stats[m.p2].lost++; 
+          stats[m.p1].pts += 3;
         } else if (m.s1 < m.s2) {
-          stats[m.p2].won++; stats[m.p1].lost++; stats[m.p2].pts += 3;
+          stats[m.p2].won++; 
+          stats[m.p1].lost++; 
+          stats[m.p2].pts += 3;
         } else {
-          stats[m.p1].draw++; stats[m.p2].draw++;
-          stats[m.p1].pts += 1; stats[m.p2].pts += 1;
+          stats[m.p1].draw++; 
+          stats[m.p2].draw++;
+          stats[m.p1].pts += 1; 
+          stats[m.p2].pts += 1;
         }
       });
       
-      const sorted = players.slice().sort((a, b) => stats[b.name].pts - stats[a.name].pts);
+      const sorted = players.slice().sort((a, b) => {
+        // Sort by points descending
+        if (stats[b.name].pts !== stats[a.name].pts) {
+          return stats[b.name].pts - stats[a.name].pts;
+        }
+        // If points are equal, sort by goal difference descending
+        const diffA = stats[a.name].goalsFor - stats[a.name].goalsAgainst;
+        const diffB = stats[b.name].goalsFor - stats[b.name].goalsAgainst;
+        return diffB - diffA;
+      });
+      
       const tbody = document.querySelector("#standings tbody");
       tbody.innerHTML = "";
       
       sorted.forEach((p, i) => {
         const s = stats[p.name];
-        tbody.innerHTML += `<tr><td>${i+1}</td><td>${p.name}</td><td>${s.played}</td><td>${s.won}</td><td>${s.draw}</td><td>${s.lost}</td><td>${s.pts}</td></tr>`;
+        const goalDiff = s.goalsFor - s.goalsAgainst;
+        tbody.innerHTML += `
+          <tr>
+            <td>${i+1}</td>
+            <td>${p.name}</td>
+            <td>${s.played}</td>
+            <td>${s.won}</td>
+            <td>${s.draw}</td>
+            <td>${s.lost}</td>
+            <td>${s.goalsFor}</td>
+            <td>${s.goalsAgainst}</td>
+            <td>${goalDiff > 0 ? '+' : ''}${goalDiff}</td>
+            <td>${s.pts}</td>
+          </tr>`;
       });
       
       // Hide loading and show table
@@ -664,6 +762,20 @@
 
       const playerSelect = document.getElementById("playerSelect");
       const deleteSelect = document.getElementById("deletePlayerSelect");
+      const p1Input = document.getElementById("p1Input");
+const p2Input = document.getElementById("p2Input");
+const resP1Input = document.getElementById("resP1Input");
+const resP2Input = document.getElementById("resP2Input");
+
+[p1Input, p2Input, resP1Input, resP2Input].forEach(select => {
+  select.innerHTML = "<option value='' disabled selected>اختر لاعبًا</option>";
+  players.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.name;
+    option.textContent = p.name;
+    select.appendChild(option);
+  });
+});
       playerSelect.innerHTML = deleteSelect.innerHTML = "";
       players.forEach(p => {
         playerSelect.innerHTML += `<option value="${p.name}">${p.name}</option>`;
@@ -708,6 +820,33 @@
       }
     }
 
+    // Show player dropdown when input is focused
+    function showPlayerDropdown(inputId) {
+      const dropdownId = inputId + 'Dropdown';
+      const dropdown = document.getElementById(dropdownId);
+      dropdown.innerHTML = '';
+      
+      players.forEach(player => {
+        const div = document.createElement('div');
+        div.textContent = player.name;
+        div.onclick = () => {
+          document.getElementById(inputId).value = player.name;
+          dropdown.style.display = 'none';
+        };
+        dropdown.appendChild(div);
+      });
+      
+      dropdown.style.display = 'block';
+      
+      // Hide dropdown when clicking outside
+      document.addEventListener('click', function hideDropdown(e) {
+        if (!e.target.closest('.player-selector')) {
+          dropdown.style.display = 'none';
+          document.removeEventListener('click', hideDropdown);
+        }
+      });
+    }
+
     async function init() {
       await loadPlayers();
       await loadMatches();
@@ -731,6 +870,7 @@
     window.loginAdmin = loginAdmin;
     window.loadRoundMatches = loadRoundMatches;
     window.loadPlayerMatches = loadPlayerMatches;
+    window.showPlayerDropdown = showPlayerDropdown;
 
     // Initialize the app
     window.onload = init;
