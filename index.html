@@ -1738,8 +1738,8 @@ select:focus, input:focus {
 if (i === 0) rankClass = 'gold-row';
 else if (i === 1) rankClass = 'silver-row';
 else if (i === 2) rankClass = 'bronze-row';
-else if (i >= sorted.length - 6) rankClass = 'warning-row'; // آخر 6 مراكز
-  const medalIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i >= sorted.length - 6 ? '⚠️' : '');
+else if (i >= sorted.length - 3) rankClass = 'warning-row'; // آخر 6 مراكز
+  const medalIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i >= sorted.length - 3 ? '⚠️' : '');
 
   tbody.innerHTML += `
     <tr class="${rankClass}">
